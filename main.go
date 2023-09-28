@@ -1,9 +1,11 @@
 package main
 
 import (
-	"PROJET-GIT-GO/controllers"
 	"log"
 	"os"
+	"path/filepath"
+
+	"PROJET-GIT-GO/controllers"
 
 	"github.com/gofiber/fiber/v2"
 	"github.com/joho/godotenv"
@@ -12,7 +14,7 @@ import (
 func main() {
 	err := godotenv.Load()
 	if err != nil {
-		log.Fatal("Error au deployement du fichier .env")
+		log.Fatal("Error al cargar el archivo .env")
 	}
 
 	app := fiber.New()
@@ -27,6 +29,16 @@ func main() {
 		}
 
 		return c.SendString("Repo clonéé, ZIP creé et CSV created ! Regardez les resultat sur votre console !")
+	})
+
+	app.Get("/api/download", func(c *fiber.Ctx) error {
+
+		zipPath := "./zipRepo/ReposEnZip.zip"
+
+		c.Type("zip")
+		c.Append("Content-Disposition", "attachment; filename="+filepath.Base(zipPath))
+
+		return c.SendFile(zipPath)
 	})
 
 	log.Fatal(app.Listen(":3000"))

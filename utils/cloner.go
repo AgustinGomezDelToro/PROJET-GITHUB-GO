@@ -42,6 +42,5 @@ func FetchRepo(directory string) error {
 		return fmt.Errorf("Erreur lors de la récupération des références : %w", err)
 	}
 	log.Printf("Références du dépôt %s récupérées avec succès\n", directory)
-	log.Println("\n")
 	return nil
 }
