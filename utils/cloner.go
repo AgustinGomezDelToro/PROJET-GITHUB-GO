@@ -18,14 +18,14 @@ func CloneRepo(url, directory string) error {
 }
 
 func UpdateRepo(directory string) error {
-	log.Printf("Mise à jour du dépôt %s\n", directory)
+	log.Printf("Mise à jour du dépôt %s", directory)
 	cmd := exec.Command("git", "pull", "origin")
 	cmd.Dir = directory
 
 	out, err := cmd.CombinedOutput()
 	if err != nil {
 		log.Println(string(out))
-		return fmt.Errorf("Error lors de la mise à jour du dépot : %w", err)
+		return fmt.Errorf("Error lors de la mise à jour du dépot : %w \n", err)
 	}
 	log.Printf("Dépôt %s mis à jour avec succès sur UpdateRepo\n", directory)
 	return nil
@@ -42,5 +42,6 @@ func FetchRepo(directory string) error {
 		return fmt.Errorf("Erreur lors de la récupération des références : %w", err)
 	}
 	log.Printf("Références du dépôt %s récupérées avec succès\n", directory)
+	log.Println("\n")
 	return nil
 }

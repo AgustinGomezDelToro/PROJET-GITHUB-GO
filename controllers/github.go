@@ -5,6 +5,7 @@ import (
 	"PROJET-GIT-GO/services"
 	"PROJET-GIT-GO/utils"
 	"fmt"
+	"sync"
 	"time"
 )
 
@@ -20,45 +21,54 @@ func GetAndCloneRepositories(user string, token string) error {
 		return err
 	}
 
-	var directories []string
+	var wg sync.WaitGroup
+	directories := make(chan string, len(repos))
 
-	cloneCount := 0
 	for _, repo := range repos {
-		if cloneCount >= 5 {
-			break
-		}
+		wg.Add(1)
 
-		fmt.Printf("\nClonage du dépôt : %s, URL : %s\n", repo.Name, repo.CloneURL)
+		go func(r models.Repository) {
+			defer wg.Done()
 
-		t, err := time.Parse(time.RFC3339, repo.LastUpdated)
-		if err != nil {
-			fmt.Printf("La date de la dernière mise à jour est vide pour le dépôt : %s\n", repo.Name)
-			continue
-		}
-		repo.LastUpdatedTime = t
+			fmt.Printf("\nClonage du dépôt : %s, URL : %s\n", r.Name, r.CloneURL)
 
-		directory := "./clonedRepos/" + repo.Name
-		directories = append(directories, directory)
+			t, err := time.Parse(time.RFC3339, r.LastUpdated)
+			if err != nil {
+				fmt.Printf("La date de la dernière mise à jour est vide pour le dépôt : %s\n", r.Name)
+				return
+			}
+			r.LastUpdatedTime = t
 
-		err = utils.CloneRepo(repo.CloneURL, directory)
-		if err != nil {
-			fmt.Printf("Erreur lors du clonage du dépôt %s : %v\n", repo.Name, err)
-			continue
-		}
+			directory := "./clonedRepos/" + r.Name
 
-		err = utils.UpdateRepo(directory)
-		if err != nil {
-			fmt.Printf("Erreur lors de la mise à jour du dépôt %s : %v\n", repo.Name, err)
-			continue
-		}
+			err = utils.CloneRepo(r.CloneURL, directory)
+			if err != nil {
+				fmt.Printf("Erreur lors du clonage du dépôt %s : %v\n", r.Name, err)
+				return
+			}
 
-		err = utils.FetchRepo(directory)
-		if err != nil {
-			fmt.Printf("Erreur lors de la récupération des références du dépôt %s : %v\n", repo.Name, err)
-			continue
-		}
+			err = utils.UpdateRepo(directory)
+			if err != nil {
+				fmt.Printf("Erreur lors de la mise à jour du dépôt %s : %v\n", r.Name, err)
+				return
+			}
 
-		cloneCount++
+			err = utils.FetchRepo(directory)
+			if err != nil {
+				fmt.Printf("Erreur lors de la récupération des références du dépôt %s : %v\n", r.Name, err)
+				return
+			}
+
+			directories <- directory
+		}(repo)
+	}
+
+	wg.Wait()
+	close(directories)
+
+	var dirSlice []string
+	for dir := range directories {
+		dirSlice = append(dirSlice, dir)
 	}
 
 	err = utils.WriteCSV(repos, "repositories.csv")
@@ -67,7 +77,7 @@ func GetAndCloneRepositories(user string, token string) error {
 	}
 
 	zipName := "./zipRepo/ReposEnZip.zip"
-	err = utils.ZipRepos(directories, zipName)
+	err = utils.ZipRepos(dirSlice, zipName)
 	if err != nil {
 		fmt.Printf("\nErreur lors de la création du fichier zip pour les dépôts : %v\n", err)
 		return err
