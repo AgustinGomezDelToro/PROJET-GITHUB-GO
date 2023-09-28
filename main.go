@@ -26,7 +26,7 @@ func main() {
 			return c.Status(500).SendString(err.Error())
 		}
 
-		return c.SendString("Repo clonéé y CSV created !")
+		return c.SendString("Repo clonéé, ZIP creé et CSV created !")
 	})
 
 	log.Fatal(app.Listen(":3000"))

@@ -1,0 +1,4 @@
+.env
+zipRepo/
+*.csv
+*.zip

@@ -20,8 +20,15 @@ func GetAndCloneRepositories(user string, token string) error {
 		return err
 	}
 
+	var directories []string
+
+	cloneCount := 0
 	for _, repo := range repos {
-		fmt.Printf("Clonage du dépôt : %s, URL : %s\n", repo.Name, repo.CloneURL)
+		if cloneCount >= 5 {
+			break
+		}
+
+		fmt.Printf("\nClonage du dépôt : %s, URL : %s\n", repo.Name, repo.CloneURL)
 
 		t, err := time.Parse(time.RFC3339, repo.LastUpdated)
 		if err != nil {
@@ -30,17 +37,42 @@ func GetAndCloneRepositories(user string, token string) error {
 		}
 		repo.LastUpdatedTime = t
 
-		err = utils.CloneRepo(repo.CloneURL, "./clonedRepos/"+repo.Name)
+		directory := "./clonedRepos/" + repo.Name
+		directories = append(directories, directory)
+
+		err = utils.CloneRepo(repo.CloneURL, directory)
 		if err != nil {
 			fmt.Printf("Erreur lors du clonage du dépôt %s : %v\n", repo.Name, err)
 			continue
 		}
+
+		err = utils.UpdateRepo(directory)
+		if err != nil {
+			fmt.Printf("Erreur lors de la mise à jour du dépôt %s : %v\n", repo.Name, err)
+			continue
+		}
+
+		err = utils.FetchRepo(directory)
+		if err != nil {
+			fmt.Printf("Erreur lors de la récupération des références du dépôt %s : %v\n", repo.Name, err)
+			continue
+		}
+
+		cloneCount++
 	}
 
 	err = utils.WriteCSV(repos, "repositories.csv")
 	if err != nil {
 		return err
 	}
+
+	zipName := "./zipRepo/ReposEnZip.zip"
+	err = utils.ZipRepos(directories, zipName)
+	if err != nil {
+		fmt.Printf("\nErreur lors de la création du fichier zip pour les dépôts : %v\n", err)
+		return err
+	}
+	fmt.Printf("\nTous les dépôts ont été compressés avec succès en tant que %s\n", zipName)
 
 	return nil
 }
