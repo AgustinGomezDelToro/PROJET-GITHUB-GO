@@ -3,10 +3,10 @@ package models
 import "time"
 
 type Repository struct {
-	ID              int
-	Name            string
-	FullName        string
-	CloneURL        string
-	LastUpdated     string
-	LastUpdatedTime time.Time
+	ID              int       `json:"id"`
+	Name            string    `json:"name"`
+	FullName        string    `json:"full_name"`
+	CloneURL        string    `json:"clone_url"`
+	LastUpdated     string    `json:"updated_at"`
+	LastUpdatedTime time.Time `json:"-"`
 }
